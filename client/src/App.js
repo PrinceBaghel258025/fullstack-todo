@@ -37,9 +37,8 @@ function App() {
         text: newTodo,
         status: "pending",
       });
-      console.log(todo.data.todo);
+      // console.log(todo.data.todo);
       setTodos((todos) => {
-        console.log("todos changed");
         return [...todos, todo.data.todo];
       });
       setNewTodo("");
@@ -48,9 +47,9 @@ function App() {
     }
   };
   const handleClick = async (todo) => {
-    console.log(todo);
+    // console.log(todo);
     const res = await axios.patch(`http://localhost:5000/${todo._id}`, {...todo, status: todo.status === "pending" ? "complete" : "pending"})
-    console.log(res.data.todo)
+    // console.log(res.data.todo)
     let newTodo = res.data.todo
     setTodos((todos) => {
       // console.log(todos)
@@ -65,7 +64,7 @@ function App() {
   };
 
   const dragStart = (e, todo, index) => {
-    console.log("drag started");
+    // console.log("drag started");
     dragItem.current = index;
   };
   const dragEnter = (e, todo, index) => {
@@ -82,16 +81,16 @@ function App() {
       ...dragOverItemContent,
       position: dragItem.current,
     };
-    console.log(dragItemContent, "dragItemContent");
-    console.log(dragItem.current, "index of item being dropped");
-    console.log(dragOverItemContent, "dragItemContent");
-    console.log(dragOverItem.current, "index of item being replaced");
+    // console.log(dragItemContent, "dragItemContent");
+    // console.log(dragItem.current, "index of item being dropped");
+    // console.log(dragOverItemContent, "dragItemContent");
+    // console.log(dragOverItem.current, "index of item being replaced");
     // deleteing the item that is being dropped
     copyListItems.splice(dragItem.current, 1);
     // placing the item at another position
     copyListItems.splice(dragOverItem.current, 0, dragItemContent);
 
-    console.log(copyListItems);
+    // console.log(copyListItems);
     dragItem.current = null;
     dragOverItem.current = null;
     copyListItems = copyListItems.map((todo, index) => ({
@@ -103,7 +102,7 @@ function App() {
       "http://localhost:5000/update-all",
       copyListItems
     );
-    console.log(updatedTodos);
+    // console.log(updatedTodos);
   };
   ///////////////////////////////////////////
 
