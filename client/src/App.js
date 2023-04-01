@@ -1,137 +1,114 @@
-import { useReducer, useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import axios from "axios";
 
-import DragSortableList from "react-drag-sortable";
+// import DragSortableList from "react-drag-sortable";
 import { Toaster, toast } from "react-hot-toast";
 
 function App() {
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState("");
-  const [list, setList] = useState([])
+
   let dragItem = useRef(null);
   let dragOverItem = useRef(null);
 
-  const backendUrl = 'http://localhost:5000'
+  const backendUrl = "http://localhost:5000";
   useEffect(() => {
-    
     const fetchData = async () => {
-      const todos = await axios.get(`${backendUrl}/`)
-      setTodos(todos.data.todos)
+      let todos = await axios.get(`${backendUrl}/`);
+      const sortedTodos = todos.data.todos.sort(
+        (item1, item2) => item1.position - item2.position
+      );
+      setTodos(sortedTodos);
       return todos;
-    }
-    fetchData()
-    // console.log(todos)
-    // setTodos(todos.todos)
-  },[])
+    };
+    fetchData();
+  }, []);
 
-
-  const handleSubmit = async  (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // console.log(newTodo);
-    if(newTodo === "") {
-      toast.error("Please add text first")
-      return 
+    if (newTodo === "") {
+      toast.error("Please add text first");
+      return;
     }
     try {
       const todo = await axios.post(`${backendUrl}/add-todo`, {
         text: newTodo,
-        status: 'pending'
-      })
-      console.log(todo.data.todo)
+        status: "pending",
+      });
+      console.log(todo.data.todo);
       setTodos((todos) => {
-        console.log("todos changed")
-        return [
-          ...todos,
-          todo.data.todo
-        ];
-      })
+        console.log("todos changed");
+        return [...todos, todo.data.todo];
+      });
       setNewTodo("");
-    } catch(err) {
-      console.log(err)
+    } catch (err) {
+      console.log(err);
     }
-    
   };
-  const handleClick = (todo) => {
-    console.log("todo");
+  const handleClick = async (todo) => {
+    console.log(todo);
+    const res = await axios.patch(`http://localhost:5000/${todo._id}`, {...todo, status: todo.status === "pending" ? "complete" : "pending"})
+    console.log(res.data.todo)
+    let newTodo = res.data.todo
     setTodos((todos) => {
       // console.log(todos)
       return todos.map((item) =>
         item === todo
           ? {
-              text: item.text,
-              status: item.status === "pending" ? "complete" : "pending",
+              ...newTodo
             }
           : item
       );
-      // return todos
     });
   };
 
-  // const handleSort = () => {
-  //   let _todos = [...todos];
-
-  //   const draggedItemContent = _todos.splice(dragItem.current, 1)[0];
-
-  //   _todos.splice(dragOverItem.current, 0, draggedItemContent);
-
-  //   dragItem.current = null;
-  //   dragOverItem.current = null;
-  // };
-
-  useEffect(() => {
-    let list = todos.length !== 0
-    ? todos.map((todo, index) => {
-        return {
-          content: (
-            <div
-              key={Math.floor(Math.random() * 10000)}
-              // onClick={() => handleClick(todo)}
-              className={
-                todo.status === "pending"
-                  ? "flex items-center space-x-4 p-4 shadow-lg m-2"
-                  : "line-through flex items-center"
-                  + "p-4 space-x-4"
-              }
-              draggable
-              // onDragStart={(e) => (dragItem.current = index)}
-              // onDragEnter={(e) => (dragOverItem.current = index)}
-              // onDragEnd={handleSort}
-              // onDragOver={(e) => e.preventDefault()}
-            >
-              <input
-                draggable
-                id="here"
-                type="checkbox"
-                checked={todo.status === "pending" ? false : true}
-                onChange={() => handleClick(todo)}
-                className=" checked:bg-blue-500 h-12 w-8 rounded-md"
-                value={"here is the first item"}
-              />
-              <label className="text-2xl" htmlFor="here" draggable>
-                {todo.text}
-              </label>
-            </div>
-          ),
-        };
-      })
-    : [
-        {
-          content: <div>No Content</div>,
-        },
-      ];
-      setList(list)
-  }, [todos])
-  
-    
-
-  const placeholder = <div className="placeholderContent">PLACEHOLDER</div>;
-  const onSort = function (sortedList, dropEvent) {
-    console.log("sortedList", sortedList, dropEvent);
+  const dragStart = (e, todo, index) => {
+    console.log("drag started");
+    dragItem.current = index;
+  };
+  const dragEnter = (e, todo, index) => {
+    dragOverItem.current = index;
   };
 
+  const drop = async (e) => {
+    let copyListItems = [...todos];
+    // getting the item that is being dropped
+    let dragItemContent = copyListItems[dragItem.current];
+    let dragOverItemContent = copyListItems[dragOverItem.current];
+    dragItemContent = { ...dragItemContent, position: dragOverItem.current };
+    dragOverItemContent = {
+      ...dragOverItemContent,
+      position: dragItem.current,
+    };
+    console.log(dragItemContent, "dragItemContent");
+    console.log(dragItem.current, "index of item being dropped");
+    console.log(dragOverItemContent, "dragItemContent");
+    console.log(dragOverItem.current, "index of item being replaced");
+    // deleteing the item that is being dropped
+    copyListItems.splice(dragItem.current, 1);
+    // placing the item at another position
+    copyListItems.splice(dragOverItem.current, 0, dragItemContent);
+
+    console.log(copyListItems);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    copyListItems = copyListItems.map((todo, index) => ({
+      ...todo,
+      position: index,
+    }));
+    setTodos(copyListItems);
+    const updatedTodos = await axios.patch(
+      "http://localhost:5000/update-all",
+      copyListItems
+    );
+    console.log(updatedTodos);
+  };
+  ///////////////////////////////////////////
+
   return (
-    <div className="bg-slate-500 h-screen">
+    <div className="bg-slate-500 min-h-screen ">
       <Toaster />
       <Navbar />
       <div className="flex justify-center my-4 mx-24">
@@ -154,31 +131,31 @@ function App() {
       </div>
       <div className=" my-8 mx-24 ">
         <h2 className="text-4xl font-medium">Todos</h2>
-        <DragSortableList
-          items={list}
-          placeholder={placeholder}
-          onSort={onSort}
-          dropBackTransitionDuration={0.3}
-          type="vertical"
-        />
-        {/* {todos.length !== 0 ? (
+
+        {todos.length !== 0 ? (
           <>
             {todos.map((todo, index) => (
               <div
                 key={Math.floor(Math.random() * 10000)}
                 // onClick={() => handleClick(todo)}
-                className={todo.status === 'pending' ? "flex items-center" : "line-through flex items-center"}
+                className={
+                  todo.status === "pending"
+                    ? "flex items-center space-x-4 p-4 shadow-lg m-2"
+                    : "line-through flex items-center space-x-4 p-4 shadow-lg m-2"
+                }
                 draggable
-                onDragStart={(e) => (dragItem.current = index)}
-                onDragEnter={(e) => (dragOverItem.current = index)}
-                onDragEnd={handleSort}
-                onDragOver={(e) => e.preventDefault()}
+                // onDragStartCapture={(e) => dragStart(e, index)}
+                onDragStart={(e) => dragStart(e, todo, index)}
+                onDragEnter={(e) => dragEnter(e, todo, index)}
+                // onDragEnter={(e) => (dragOverItem.current = index)}
+                onDragEnd={drop}
+                // onDragOver={(e) => e.preventDefault()}
               >
                 <input
-                draggable
+                  draggable
                   id="here"
                   type="checkbox"
-                  checked={todo.status === 'pending' ? false : true}
+                  checked={todo.status === "pending" ? false : true}
                   onChange={() => handleClick(todo)}
                   className=" checked:bg-blue-500 h-12 w-8 rounded-md"
                   value={"here is the first item"}
@@ -189,7 +166,7 @@ function App() {
               </div>
             ))}
           </>
-        ) : null} */}
+        ) : null}
       </div>
     </div>
   );

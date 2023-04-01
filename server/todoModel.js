@@ -9,7 +9,8 @@ const todoSchema = new mongoose.Schema({
         type: String,
         enum: ["pending", "complete"],
         default: 'pending'
-    }
+    },
+    position: Number
 })
 
 const Todo = mongoose.model('Todos', todoSchema)
