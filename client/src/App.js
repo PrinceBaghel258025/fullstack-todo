@@ -98,7 +98,7 @@ function App() {
       position: index,
     }));
     setTodos(copyListItems);
-    const updatedTodos = await axios.patch(
+    const updatedTodos = await axios.put(
       "http://localhost:5000/update-all",
       copyListItems
     );

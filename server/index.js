@@ -42,16 +42,16 @@ app.patch('/:id', async (req, res) => {
         todo: updatedTodo
     })
 })
-app.patch('/update-all', async (req, res) => {
+app.put('/update-all', async (req, res) => {
     const updatedTodos = req.body;
     const todosToSend =  updatedTodos.map(async (todo) => {
         const newTodo = await Todo.findByIdAndUpdate(todo._id, todo, {new : true})
         return newTodo;
     })
-    console.log(todosToSend)
+    // console.log(todosToSend)
     return res.status(200).json({
         message: "todos updated",
-        todos: todosToSend
+        // todos: todosToSend
     })
 
 })
